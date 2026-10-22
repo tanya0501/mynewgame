@@ -152,3 +152,78 @@ void pass_time(int *day, int *hour) {
 
     printf("Время промотано. Теперь: День %d, %02d:00\n", *day, *hour);
 }
+void show_inventory(const int *inventory, char item_names[MAX_ITEMS][MAX_NAME_LEN]) {
+    printf("\n--- СОДЕРЖИМОЕ ИНВЕНТАРЯ ---\n");
+    for (int i = 0; i < INVENTORY_SIZE; ++i) {
+        int id = inventory[i];
+        const char *name = (id >= 0 && id < MAX_ITEMS) ? item_names[id] : "Неизвестно";
+        printf("Слот %d: [%d] - %s\n", i, id, name);
+    }
+}
+void put_item(int *inventory, char item_names[MAX_ITEMS][MAX_NAME_LEN]) {
+    int slot = get_valid_int(0, INVENTORY_SIZE - 1, "Введите индекс слота (0-9): ");
+    int item_id = get_valid_int(0, MAX_ITEMS - 1, "Введите ID предмета (0-9): ");
+
+    inventory[slot] = item_id;
+    printf("Предмет \"%s\" (ID %d) успешно помещён в слот %d.\n", item_names[item_id], item_id, slot);
+}
+void drop_item(int *inventory, char item_names[MAX_ITEMS][MAX_NAME_LEN]) {
+    int slot = get_valid_int(0, INVENTORY_SIZE - 1, "Введите индекс слота для удаления (0-9): ");
+    int old_id = inventory[slot];
+
+    inventory[slot] = EMPTY_SLOT;
+    printf("Слот %d очищен. Предмет \"%s\" (ID %d) выброшен.\n", slot, item_names[old_id], old_id);
+}
+void audit_resources(const int *inventory) {
+    int target_id = get_valid_int(0, MAX_ITEMS - 1, "Введите ID предмета для ревизии (0-9): ");
+    int count = 0;
+
+    printf("Позиции слотов: ");
+    for (int i = 0; i < INVENTORY_SIZE; ++i) {
+        if (inventory[i] == target_id) {
+            printf("%d ", i);
+            count++;
+        }
+    }
+
+    if (count > 0) {
+        printf("\nВсего найдено предметов ID %d: %d шт.\n", target_id, count);
+    } else {
+        printf("нет (таких предметов в инвентаре нет).\n");
+    }
+}
+
+void search_item_by_name(const int *inventory, char item_names[MAX_ITEMS][MAX_NAME_LEN]) {
+    char search_name[MAX_NAME_LEN];
+    printf("Введите название предмета для поиска (например, Дерево): ");
+
+    if (!fgets(search_name, sizeof(search_name), stdin)) return;
+    remove_newline(search_name);
+
+    int found_id = -1;
+    for (int i = 0; i < MAX_ITEMS; ++i) {
+        if (strcmp(item_names[i], search_name) == 0) {
+            found_id = i;
+            break;
+        }
+    }
+
+    if (found_id == -1) {
+printf("[Результат] Предмет с названием \"%s\" не найден в каталоге!\n", search_name);
+        return;
+    }
+    printf("[Каталог] Найден ID: %d (\"%s\")\n", found_id, search_name);
+    int count = 0;
+    printf("Слоты в инвентаре: ");
+    for (int i = 0; i < INVENTORY_SIZE; ++i) {
+        if (inventory[i] == found_id) {
+            printf("%d ", i);
+            count++;
+        }
+    }
+    if (count == 0) {
+        printf("этого предмета сейчас нет в рюкзаке.\n");
+    } else {
+        printf("\nВсего в рюкзаке: %d шт.\n", count);
+    }
+}
