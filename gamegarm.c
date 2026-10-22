@@ -234,7 +234,7 @@ void save_diary(const char *farmer_name, int day, int hour, const int *inventory
         return;
     }
 
-    /* Вывод сводки на экран */
+    //Вывод сводки на экран 
     printf("\n--- СОХРАНЕНИЕ В ДНЕВНИК ФЕРМЕРА ---\n");
     printf("Фермер: %s | День %d | Время %02d:00\n", farmer_name, day, hour);
     printf("Содержимое рюкзака:\n");
@@ -243,7 +243,7 @@ void save_diary(const char *farmer_name, int day, int hour, const int *inventory
         printf("  Слот %d: [%d] - %s\n", i, id, item_names[id]);
     }
 
-    /* Дублирование записи в файл diary.txt */
+    //Дублирование записи в файл diary.txt 
     fprintf(diary, "--- ЗАПИСЬ В ДНЕВНИКЕ ---\n");
     fprintf(diary, "Фермер: %s | День %d | Время %02d:00\n", farmer_name, day, hour);
     fprintf(diary, "Содержимое рюкзака:\n");
@@ -271,7 +271,7 @@ void check_crafting_recipes(const int *inventory, char item_names[MAX_ITEMS][MAX
         return;
     }
 
-    /* 1. Считаем фактическое количество каждого ресурса у игрока */
+    //Считаем фактическое количество каждого ресурса у игрока 
     int available_resources[MAX_ITEMS] = {0};
     for (int i = 0; i < INVENTORY_SIZE; ++i) {
         int id = inventory[i];
@@ -291,21 +291,48 @@ void check_crafting_recipes(const int *inventory, char item_names[MAX_ITEMS][MAX
         remove_newline(line);
         if (strlen(line) == 0) continue;
 
-        /* Ищем символ двоеточия ':' разделяющий название предмета и список ID */
+        //Ищем символ двоеточия ':' разделяющий название предмета и список ID
         char *colon_ptr = strchr(line, ':');
         if (!colon_ptr) {
-            continue; /* Пропуск некорректных строк */
+            continue; //Пропуск некорректных строк
         }
 
-        /* Выделяем название крафтового предмета */
+        //Выделяем название крафтового предмета 
         *colon_ptr = '\0';
         char recipe_name[MAX_NAME_LEN];
         strncpy(recipe_name, line, MAX_NAME_LEN - 1);
         recipe_name[MAX_NAME_LEN - 1] = '\0';
 
-        /* Убираем возможные пробелы на конце имени */
+       //Убираем возможные пробелы на конце имени 
         int name_len = strlen(recipe_name);
         while (name_len > 0 && recipe_name[name_len - 1] == ' ') {
             recipe_name[name_len - 1] = '\0';
             name_len--;
+        }
+ //2. Считаем требуемые компоненты для этого конкретного рецепта 
+        int required_resources[MAX_ITEMS] = {0};
+        char *token_str = colon_ptr + 1;
+        char *token = strtok(token_str, " \t");
+
+        while (token != NULL) {
+            int item_id = atoi(token);
+            if (item_id > EMPTY_SLOT && item_id < MAX_ITEMS) {
+                required_resources[item_id]++;
+            }
+            token = strtok(NULL, " \t");
+        }
+
+        //3. Проверяем, хватает ли ресурсов у игрока 
+        int can_craft = 1;
+        char missing_desc[BUFFER_SIZE] = "";
+
+        for (int id = 1; id < MAX_ITEMS; ++id) {
+            if (required_resources[id] > available_resources[id]) {
+                can_craft = 0;
+                int diff = required_resources[id] - available_resources[id];
+
+                char part[64];
+                snprintf(part, sizeof(part), "%d %s, ", diff, item_names[id]);
+                strncat(missing_desc, part, sizeof(missing_desc) - strlen(missing_desc) - 1);
+            }
         }
