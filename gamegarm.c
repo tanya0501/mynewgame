@@ -337,13 +337,13 @@ void check_crafting_recipes(const int *inventory, char item_names[MAX_ITEMS][MAX
             }
         }
 
-        /* Убираем последнюю запятую и пробел, если есть */
+        //Убираем последнюю запятую и пробел, если есть 
         int missing_len = strlen(missing_desc);
         if (missing_len >= 2 && missing_desc[missing_len - 2] == ',') {
             missing_desc[missing_len - 2] = '\0';
         }
 
-        /* 4. Формируем строку вердикта */
+        //4. Формируем строку вердикта 
         char result_line[BUFFER_SIZE];
         if (can_craft) {
             snprintf(result_line, sizeof(result_line), "%s: [ДОСТУПНО]", recipe_name);
@@ -351,7 +351,7 @@ void check_crafting_recipes(const int *inventory, char item_names[MAX_ITEMS][MAX
             snprintf(result_line, sizeof(result_line), "%s: [НЕ ХВАТАЕТ РЕСУРСОВ] (Недостает: %s)", recipe_name, missing_desc);
         }
 
-        /* Выводим результат одновременно на экран И в файл output.txt */
+        //Выводим результат одновременно на экран И в файл output.txt 
         printf("%s\n", result_line);
         fprintf(fout, "%s\n", result_line);
 
@@ -367,4 +367,68 @@ void check_crafting_recipes(const int *inventory, char item_names[MAX_ITEMS][MAX
     fclose(fin);
     fclose(fout);
     printf("[Успешно] Все результаты зафиксированы на экране и в '%s'.\n", OUTPUT_FILE);
+}
+
+//точка входа
+int main(void) {
+    int current_day = 1;
+    int current_hour = 8;
+    char farmer_name[MAX_FARMER_NAME_LEN];
+    char item_names[MAX_ITEMS][MAX_NAME_LEN];
+
+   //Начальный рюкзак игрока: 2 Дерева (1), 1 Камень (2), 1 Семена (3), 1 Железо (4), 1 Ткань (5)
+    int inventory[INVENTORY_SIZE] = {
+        ITEM_WOOD, ITEM_WOOD, ITEM_STONE, ITEM_SEEDS,
+        ITEM_IRON, ITEM_CLOTH, EMPTY_SLOT, EMPTY_SLOT,
+        EMPTY_SLOT, EMPTY_SLOT
+    };
+
+    //1. Имя фермера 
+    init_farmer_name(farmer_name);
+
+    /* 2. Загрузка каталога предметов из items.txt с защитой */
+    load_item_catalog(item_names);
+
+    //Главный цикл программы 
+    while (1) {
+        print_menu(farmer_name);
+        int choice = get_valid_int(0, 9, "Выберите пункт (0-9): ");
+
+        switch (choice) {
+            case 0:
+                printf("\nСохранение завершено. До свидания, %s!\n", farmer_name);
+                return 0;
+            case 1:
+                show_time(current_day, current_hour);
+                break;
+            case 2:
+                pass_time(&current_day, &current_hour);
+                break;
+            case 3:
+                show_inventory(inventory, item_names);
+                break;
+            case 4:
+                put_item(inventory, item_names);
+                break;
+            case 5:
+                drop_item(inventory, item_names);
+                break;
+            case 6:
+                audit_resources(inventory);
+                break;
+            case 7:
+                search_item_by_name(inventory, item_names);
+                break;
+            case 8:
+                save_diary(farmer_name, current_day, current_hour, inventory, item_names);
+                break;
+            case 9:
+                check_crafting_recipes(inventory, item_names);
+                break;
+            default:
+                break;
+        }
+    }
+
+    return 0;
 }
