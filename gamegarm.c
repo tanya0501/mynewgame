@@ -336,3 +336,35 @@ void check_crafting_recipes(const int *inventory, char item_names[MAX_ITEMS][MAX
                 strncat(missing_desc, part, sizeof(missing_desc) - strlen(missing_desc) - 1);
             }
         }
+
+        /* Убираем последнюю запятую и пробел, если есть */
+        int missing_len = strlen(missing_desc);
+        if (missing_len >= 2 && missing_desc[missing_len - 2] == ',') {
+            missing_desc[missing_len - 2] = '\0';
+        }
+
+        /* 4. Формируем строку вердикта */
+        char result_line[BUFFER_SIZE];
+        if (can_craft) {
+            snprintf(result_line, sizeof(result_line), "%s: [ДОСТУПНО]", recipe_name);
+        } else {
+            snprintf(result_line, sizeof(result_line), "%s: [НЕ ХВАТАЕТ РЕСУРСОВ] (Недостает: %s)", recipe_name, missing_desc);
+        }
+
+        /* Выводим результат одновременно на экран И в файл output.txt */
+        printf("%s\n", result_line);
+        fprintf(fout, "%s\n", result_line);
+
+        recipe_count++;
+    }
+
+    if (recipe_count == 0) {
+        printf("[Предупреждение] В файле '%s' не найдено ни одного рецепта!\n", INPUT_FILE);
+        fprintf(fout, "В файле рецептов нет данных.\n");
+    }
+
+    printf("==================================================\n");
+    fclose(fin);
+    fclose(fout);
+    printf("[Успешно] Все результаты зафиксированы на экране и в '%s'.\n", OUTPUT_FILE);
+}
