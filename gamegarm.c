@@ -102,3 +102,20 @@ void load_item_catalog(char item_names[MAX_ITEMS][MAX_NAME_LEN]) {
     fclose(file);
     printf("[Система] Каталог предметов успешно загружен из '%s'.\n", ITEMS_FILE);
 }
+//Запрос имени персонажа у пользователя при старте.
+void init_farmer_name(char *farmer_name) {
+    printf("==================================================\n");
+    printf("        ДОБРО ПОЖАЛОВАТЬ В СИМУЛЯТОР ФЕРМЫ!       \n");
+    printf("==================================================\n");
+    printf("Введите имя вашего фермера: ");
+
+    if (fgets(farmer_name, MAX_FARMER_NAME_LEN, stdin)) {
+        remove_newline(farmer_name);
+        if (strlen(farmer_name) == 0) {
+            strncpy(farmer_name, "Безымянный фермер", MAX_FARMER_NAME_LEN - 1);
+        }
+    } else {
+        strncpy(farmer_name, "Безымянный фермер", MAX_FARMER_NAME_LEN - 1);
+    }
+    farmer_name[MAX_FARMER_NAME_LEN - 1] = '\0';
+}
