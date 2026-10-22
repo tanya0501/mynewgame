@@ -119,3 +119,36 @@ void init_farmer_name(char *farmer_name) {
     }
     farmer_name[MAX_FARMER_NAME_LEN - 1] = '\0';
 }
+
+//функции пунктов меню
+void print_menu(const char *farmer_name) {
+    printf("\n==================================================\n");
+    printf(" Ферма игрока: %s\n", farmer_name);
+    printf("==================================================\n");
+    printf(" [0] Выход\n");
+    printf(" [1] Посмотреть на часы\n");
+    printf(" [2] Промотать время (Поработать)\n");
+    printf(" [3] Посмотреть инвентарь\n");
+    printf(" [4] Положить предмет в слот\n");
+    printf(" [5] Выбросить предмет\n");
+    printf(" [6] Ревизия ресурсов (Вариант 1)\n");
+    printf(" [7] Поиск предмета в рюкзаке по названию\n");
+    printf(" [8] Записать состояние в дневник фермера (diary.txt)\n");
+    printf(" [9] Расшифровать старые записи (Вариант: Цезарь / Инверсия)\n");
+    printf("--------------------------------------------------\n");
+}
+void show_time(int day, int hour) {
+    printf("\nТекущее время: День %d, %02d:00\n", day, hour);
+}
+
+void pass_time(int *day, int *hour) {
+    int work_hours = get_valid_int(0, 1000, "Сколько часов вы хотите потратить на работу? ");
+    *hour += work_hours;
+
+    while (*hour >= HOURS_IN_DAY) {
+        *hour -= HOURS_IN_DAY;
+        (*day)++;
+    }
+
+    printf("Время промотано. Теперь: День %d, %02d:00\n", *day, *hour);
+}
