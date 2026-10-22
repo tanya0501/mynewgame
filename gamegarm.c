@@ -227,3 +227,32 @@ printf("[Результат] Предмет с названием \"%s\" не н
         printf("\nВсего в рюкзаке: %d шт.\n", count);
     }
 }
+void save_diary(const char *farmer_name, int day, int hour, const int *inventory, char item_names[MAX_ITEMS][MAX_NAME_LEN]) {
+    FILE *diary = fopen(DIARY_FILE, "a");
+    if (!diary) {
+        printf("[Ошибка] Не удалось открыть или создать файл дневника '%s'!\n", DIARY_FILE);
+        return;
+    }
+
+    /* Вывод сводки на экран */
+    printf("\n--- СОХРАНЕНИЕ В ДНЕВНИК ФЕРМЕРА ---\n");
+    printf("Фермер: %s | День %d | Время %02d:00\n", farmer_name, day, hour);
+    printf("Содержимое рюкзака:\n");
+    for (int i = 0; i < INVENTORY_SIZE; ++i) {
+        int id = inventory[i];
+        printf("  Слот %d: [%d] - %s\n", i, id, item_names[id]);
+    }
+
+    /* Дублирование записи в файл diary.txt */
+    fprintf(diary, "--- ЗАПИСЬ В ДНЕВНИКЕ ---\n");
+    fprintf(diary, "Фермер: %s | День %d | Время %02d:00\n", farmer_name, day, hour);
+    fprintf(diary, "Содержимое рюкзака:\n");
+    for (int i = 0; i < INVENTORY_SIZE; ++i) {
+        int id = inventory[i];
+        fprintf(diary, "  Слот %d: [%d] - %s\n", i, id, item_names[id]);
+    }
+    fprintf(diary, "-------------------------\n\n");
+
+    fclose(diary);
+    printf("[Успешно] Состояние зафиксировано на экране и записано в '%s'!\n", DIARY_FILE);
+}
