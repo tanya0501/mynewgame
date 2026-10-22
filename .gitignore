@@ -1,0 +1,5 @@
+*.exe
+*.o
+/hello
+/farm3
+.DS_Store
