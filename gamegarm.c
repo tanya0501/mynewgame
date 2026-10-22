@@ -256,3 +256,56 @@ void save_diary(const char *farmer_name, int day, int hour, const int *inventory
     fclose(diary);
     printf("[Успешно] Состояние зафиксировано на экране и записано в '%s'!\n", DIARY_FILE);
 }
+//ЗАДАНИЕ ПО ВАРИАНТУ
+void check_crafting_recipes(const int *inventory, char item_names[MAX_ITEMS][MAX_NAME_LEN]) {
+    FILE *fin = fopen(INPUT_FILE, "r");
+    if (!fin) {
+        printf("[Ошибка] Файл с рецептами '%s' не найден! Создайте файл '%s'.\n", INPUT_FILE, INPUT_FILE);
+        return;
+    }
+
+    FILE *fout = fopen(OUTPUT_FILE, "w");
+    if (!fout) {
+        printf("[Ошибка] Не удалось создать файл для записи '%s'!\n", OUTPUT_FILE);
+        fclose(fin);
+        return;
+    }
+
+    /* 1. Считаем фактическое количество каждого ресурса у игрока */
+    int available_resources[MAX_ITEMS] = {0};
+    for (int i = 0; i < INVENTORY_SIZE; ++i) {
+        int id = inventory[i];
+        if (id > EMPTY_SLOT && id < MAX_ITEMS) {
+            available_resources[id]++;
+        }
+    }
+
+    printf("\n==================================================\n");
+    printf("   ПРОВЕРКА РЕЦЕПТОВ КРАФТА (%s -> %s)\n", INPUT_FILE, OUTPUT_FILE);
+    printf("==================================================\n");
+
+    char line[BUFFER_SIZE];
+    int recipe_count = 0;
+
+    while (fgets(line, sizeof(line), fin)) {
+        remove_newline(line);
+        if (strlen(line) == 0) continue;
+
+        /* Ищем символ двоеточия ':' разделяющий название предмета и список ID */
+        char *colon_ptr = strchr(line, ':');
+        if (!colon_ptr) {
+            continue; /* Пропуск некорректных строк */
+        }
+
+        /* Выделяем название крафтового предмета */
+        *colon_ptr = '\0';
+        char recipe_name[MAX_NAME_LEN];
+        strncpy(recipe_name, line, MAX_NAME_LEN - 1);
+        recipe_name[MAX_NAME_LEN - 1] = '\0';
+
+        /* Убираем возможные пробелы на конце имени */
+        int name_len = strlen(recipe_name);
+        while (name_len > 0 && recipe_name[name_len - 1] == ' ') {
+            recipe_name[name_len - 1] = '\0';
+            name_len--;
+        }
