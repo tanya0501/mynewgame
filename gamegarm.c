@@ -388,7 +388,309 @@ void check_crafting_recipes(const int *inventory, char item_names[MAX_ITEMS][MAX
     fclose(fout);
     printf("[Успешно] Все результаты зафиксированы на экране и в '%s'.\n", OUTPUT_FILE);
 }
+//карта
+void free_map(GameMap *map) {
+    if (map != NULL) {
+        free(map->cells);
+        map->cells = NULL;
+    }
+}
+int map_index(const GameMap *map, int row, int col) {
+    return row * map->cols + col;
+}
+int is_blocked(char cell) {
+    return cell == '#' || cell == 'T' || cell == 'R';
+}
+void print_map(const GameMap *map) {
+    printf("\n--- КАРТА ---\n");
 
+    for (int row = 0; row < map->rows; ++row) {
+        for (int col = 0; col < map->cols; ++col) {
+            if (row == map->player_row && col == map->player_col) {
+                putchar('@');
+            } else {
+                putchar(map->cells[map_index(map, row, col)]);
+            }
+        }
+        putchar('\n');
+    }
+
+    if (map->mode == DUNGEON_MODE) {
+        printf("Этаж: %d\n", map->depth);
+        printf("WASD — движение, Q — домой на лестнице U\n");
+    } else {
+        printf("Лес-кольцо. Переходов через край: %d\n",
+               map->edge_transitions);
+        printf("WASD — движение, Q — выход с портала P\n");
+    }
+}
+
+void fill_empty_map(GameMap *map) {
+    for (int row = 0; row < map->rows; ++row) {
+        for (int col = 0; col < map->cols; ++col) {
+            int index = map_index(map, row, col);
+
+            if (map->mode == DUNGEON_MODE &&
+                (row == 0 || row == map->rows - 1 ||
+                 col == 0 || col == map->cols - 1)) {
+                map->cells[index] = '#';
+            } else {
+                map->cells[index] = '.';
+            }
+        }
+    }
+}
+void place_random_obstacles(GameMap *map) {
+    int percent = FOREST_MIN_OBSTACLE_PERCENT +
+                  rand() % (FOREST_MAX_OBSTACLE_PERCENT -
+                            FOREST_MIN_OBSTACLE_PERCENT + 1);
+
+    for (int row = 1; row < map->rows - 1; ++row) {
+        for (int col = 1; col < map->cols - 1; ++col) {
+            int random_value = rand() % 100;
+
+            if (random_value < percent) {
+                if (rand() % 2 == 0) {
+                    map->cells[map_index(map, row, col)] = 'T';
+                } else {
+                    map->cells[map_index(map, row, col)] = 'R';
+                }
+            }
+        }
+    }
+}
+int is_empty_cell(const GameMap *map, int row, int col) {
+    char cell = map->cells[map_index(map, row, col)];
+    return cell == '.';
+}
+
+void place_player(GameMap *map) {
+    int row;
+    int col;
+
+    do {
+        row = 1 + rand() % (map->rows - 2);
+        col = 1 + rand() % (map->cols - 2);
+    } while (!is_empty_cell(map, row, col));
+
+    map->player_row = row;
+    map->player_col = col;
+}
+void place_dungeon_stairs(GameMap *map) {
+    int row;
+    int col;
+
+    do {
+        row = 1 + rand() % (map->rows - 2);
+        col = 1 + rand() % (map->cols - 2);
+    } while (!is_empty_cell(map, row, col) ||
+             (row == map->player_row && col == map->player_col));
+
+    map->cells[map_index(map, row, col)] = 'D';
+//Лестница U располагается рядом с точкой старта. Сначала пробуем клетку справа, затем остальные соседние клетки.
+    int directions[4][2] = {
+        {0, 1}, {0, -1}, {1, 0}, {-1, 0}
+    };
+
+    for (int i = 0; i < 4; ++i) {
+        int stair_row = map->player_row + directions[i][0];
+        int stair_col = map->player_col + directions[i][1];
+
+        if (stair_row > 0 && stair_row < map->rows - 1 &&
+            stair_col > 0 && stair_col < map->cols - 1 &&
+            is_empty_cell(map, stair_row, stair_col)) {
+            map->cells[map_index(map, stair_row, stair_col)] = 'U';
+            return;
+        }
+    }
+}
+void place_forest_portal(GameMap *map) {
+    int row;
+    int col;
+
+    do {
+        row = rand() % map->rows;
+        col = rand() % map->cols;
+    } while (!is_empty_cell(map, row, col) ||
+             (row == map->player_row && col == map->player_col));
+
+    map->cells[map_index(map, row, col)] = 'P';
+}
+int create_map(GameMap *map, int mode, int depth) {
+    map->rows = MAP_MIN_SIZE +
+                rand() % (MAP_MAX_SIZE - MAP_MIN_SIZE + 1);
+    map->cols = MAP_MIN_SIZE +
+                rand() % (MAP_MAX_SIZE - MAP_MIN_SIZE + 1);
+
+    map->mode = mode;
+    map->depth = depth;
+    map->edge_transitions = 0;
+
+    map->cells = malloc((size_t)map->rows *
+                        (size_t)map->cols *
+                        sizeof(char));
+
+    if (map->cells == NULL) {
+        printf("[Ошибка] Не удалось выделить память под карту.\n");
+        return 0;
+    }
+    fill_empty_map(map);
+    place_random_obstacles(map);
+    place_player(map);
+
+    if (mode == DUNGEON_MODE) {
+        place_dungeon_stairs(map);
+    }
+
+    return 1;
+}
+int try_move(GameMap *map, char command) {
+    int new_row = map->player_row;
+    int new_col = map->player_col;
+
+    if (command == 'w' || command == 'W') {
+        new_row--;
+    } else if (command == 's' || command == 'S') {
+        new_row++;
+    } else if (command == 'a' || command == 'A') {
+        new_col--;
+    } else if (command == 'd' || command == 'D') {
+        new_col++;
+    } else {
+        printf("[Ошибка] Используйте W, A, S, D или Q.\n");
+        return 0;
+    }
+
+    if (map->mode == DUNGEON_MODE) {
+        if (new_row < 0 || new_row >= map->rows ||
+            new_col < 0 || new_col >= map->cols) {
+            printf("За стену пройти нельзя.\n");
+            return 0;
+        }
+    } else {
+        int crossed_edge = 0;
+
+        if (new_row < 0) {
+            new_row = map->rows - 1;
+            crossed_edge = 1;
+        } else if (new_row >= map->rows) {
+            new_row = 0;
+            crossed_edge = 1;
+        }
+
+        if (new_col < 0) {
+            new_col = map->cols - 1;
+            crossed_edge = 1;
+        } else if (new_col >= map->cols) {
+            new_col = 0;
+            crossed_edge = 1;
+        }
+        if (crossed_edge) {
+            map->edge_transitions++;
+
+            printf("Вы перешли через край карты.\n");
+
+            if (map->edge_transitions >= 3) {
+                int portal_exists = 0;
+
+                for (int row = 0; row < map->rows; ++row) {
+                    for (int col = 0; col < map->cols; ++col) {
+                        if (map->cells[map_index(map, row, col)] == 'P') {
+                            portal_exists = 1;
+                        }
+                    }
+                }
+                if (!portal_exists) {
+                    place_forest_portal(map);
+                    printf("На карте появился портал P!\n");
+                }
+            }
+        }
+    }
+char destination = map->cells[map_index(map, new_row, new_col)];
+    if (is_blocked(destination)) {
+        printf("Пройти нельзя: впереди препятствие.\n");
+        return 0;
+    }
+    map->player_row = new_row;
+    map->player_col = new_col;
+    return 1;
+}
+void run_map_game(void) {
+    GameMap map = {0};
+    int mode;
+    int depth = 1;
+    char command;
+    printf("\n--- РЕЖИМ КАРТЫ ---\n");
+    printf("[1] Подземелье\n");
+    printf("[2] Лес-кольцо\n");
+    mode = get_valid_int(
+        DUNGEON_MODE,
+        FOREST_MODE,
+        "Выберите режим: "
+    );
+    srand((unsigned int)time(NULL));
+    if (!create_map(&map, mode, depth)) {
+        return;
+    }
+
+    while (1) {
+        print_map(&map);
+        printf("Ваш ход: ");
+
+        if (scanf(" %c", &command) != 1) {
+            clear_input_buffer();
+            printf("[Ошибка] Не удалось прочитать команду.\n");
+            continue;
+}
+        if (command == 'q' || command == 'Q') {
+            char current_cell =
+                map.cells[map_index(&map,
+                                    map.player_row,
+                                    map.player_col)];
+
+            if (map.mode == DUNGEON_MODE && current_cell == 'U') {
+                printf("Вы поднялись по лестнице и вернулись домой.\n");
+                break;
+}
+            if (map.mode == FOREST_MODE && current_cell == 'P') {
+                printf("Вы вошли в портал и вернулись домой.\n");
+                break;
+}
+            printf("Сбежать домой можно только с клетки U или P.\n");
+            continue;
+}
+
+        if (!try_move(&map, command)) {
+            continue;
+}
+        char current_cell =
+            map.cells[map_index(&map,
+                                map.player_row,
+                                map.player_col)];
+        if (map.mode == DUNGEON_MODE && current_cell == 'D') {
+            printf("Вы нашли лестницу вниз. Загружается новый этаж...\n");
+
+            depth++;
+            free_map(&map);
+
+            if (!create_map(&map, DUNGEON_MODE, depth)) {
+                return;
+            }
+}
+        if (map.mode == FOREST_MODE && current_cell == 'P') {
+            printf("Вы вошли в портал. Генерируется новая карта...\n");
+
+            free_map(&map);
+
+            if (!create_map(&map, FOREST_MODE, 1)) {
+                return;
+            }
+        }
+    }
+
+    free_map(&map);
+}
 //точка входа
 int main(void) {
     int current_day = 1;
