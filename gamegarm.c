@@ -155,6 +155,7 @@ void print_menu(const char *farmer_name) {
     printf(" [7] Поиск предмета в рюкзаке по названию\n");
     printf(" [8] Записать состояние в дневник фермера (diary.txt)\n");
     printf(" [9] Расшифровать старые записи \n");
+    printf(" [10] Исследовать карту \n");
     printf("--------------------------------------------------\n");
 }
 void show_time(int day, int hour) {
@@ -714,7 +715,7 @@ int main(void) {
     //Главный цикл программы 
     while (1) {
         print_menu(farmer_name);
-        int choice = get_valid_int(0, 9, "Выберите пункт (0-9): ");
+        int choice = get_valid_int(0, 10, "Выберите пункт (0-10): ");
 
         switch (choice) {
             case 0:
@@ -749,6 +750,9 @@ int main(void) {
                 break;
             default:
                 break;
+            case 10:
+				run_map_game();
+				break;
         }
     }
 
