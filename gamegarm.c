@@ -1,6 +1,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
+
+#define MAP_MIN_SIZE 5
+#define MAP_MAX_SIZE 30
+#define FOREST_MIN_OBSTACLE_PERCENT 15
+#define FOREST_MAX_OBSTACLE_PERCENT 30
+
+#define DUNGEON_MODE 1
+#define FOREST_MODE 2
 
 #define INVENTORY_SIZE      10
 #define MAX_ITEMS           10
@@ -13,6 +22,17 @@
 #define DIARY_FILE          "diary.txt"
 #define INPUT_FILE          "input.txt"
 #define OUTPUT_FILE         "output.txt"
+
+typedef struct {
+	int rows;
+	int cols;
+	char *cells;
+	int player_row;
+	int_player_col;
+	int_depth;
+	int edge_transitiond;
+	int mode;
+} GameMap;
 
 /* ID предметов по умолчанию */
 #define EMPTY_SLOT 0
