@@ -1,3 +1,6 @@
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -156,6 +159,10 @@ static void run_map_game(Player *player, int *day, int *hour, char item_names[MA
 }
 
 int main(void) {
+	#ifdef _WIN32
+		SetConsoleOutputCP(CP_UTF8);
+		SetConsoleCP(CP_UTF8);
+		#endif
     int current_day = 1;
     int current_hour = MORNING_HOUR;
     Player *player = NULL;
